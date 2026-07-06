@@ -1,0 +1,54 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>와이어프레임 — 스마트 알람(가칭)</title>
+<style>
+body{font-family:system-ui;background:#f5f5f4;margin:0;padding:32px;color:#333}
+h1{font-size:20px} h2{font-size:15px;color:#666;margin:32px 0 8px}
+.screen{background:#fff;border:2px solid #ccc;border-radius:8px;max-width:420px;padding:16px;margin-bottom:8px}
+.box{background:#e5e5e3;border:1px dashed #aaa;border-radius:4px;padding:14px;margin:8px 0;text-align:center;color:#555;font-size:13px}
+.btn{background:#d4d4d2;border:1px solid #999;border-radius:6px;padding:10px;text-align:center;font-size:13px;margin:8px 0}
+.warn{background:#f0dede;border:1px dashed #c99;border-radius:4px;padding:10px;margin:8px 0;text-align:center;color:#844;font-size:12px}
+.note{font-size:12px;color:#999}
+</style></head><body>
+<h1>와이어프레임 — 스마트 알람 (가칭) · 로파이 · 뼈대만</h1>
+
+<h2>S0. 온보딩 — 목적: 알림 권한 + 도시 설정 (첫 실행 1회)</h2>
+<div class="screen">
+  <div class="box">환영 문구 — "날씨에 맞춰 깨워주는 알람"</div>
+  <div class="btn">알림 권한 허용하기 (거부해도 진행)</div>
+  <div class="box">도시 입력·검색 (예: 서울)</div>
+  <div class="btn">시작 → S1</div>
+  <div class="note">도시 못 찾으면: "도시를 못 찾았어요, 다시 검색"</div>
+</div>
+
+<h2>S1. 알람 목록 / 홈 — 목적: 내 알람 보고 켜고 끄기</h2>
+<div class="screen">
+  <div class="box">상단: [서울 v]  ·  오늘 흐림 12도</div>
+  <div class="warn">(권한 꺼짐일 때만) 지금은 알람이 안 울려요 → 설정</div>
+  <div class="box">알람 카드 — 06:45 · 출근 알람 · 월~금 · [날씨조정] · (켜기 토글)</div>
+  <div class="box">알람 카드 — 08:00 · 주말 · 토일 · (켜기 토글)</div>
+  <div class="btn">+ 알람 추가 → S2</div>
+  <div class="note">빈 상태: "첫 알람을 만들어 보세요" + 만들기 버튼</div>
+</div>
+
+<h2>S2. 알람 추가·편집 — 목적: 알람 하나 만들기/고치기</h2>
+<div class="screen">
+  <div class="box">시간 선택 — 06 : 45 (필수)</div>
+  <div class="box">반복 요일 — [월][화][수][목][금][토][일] (하나 이상)</div>
+  <div class="box">라벨 (선택) — "출근 알람"</div>
+  <div class="box">날씨 조정 (토글) — 켜면 아래 노출</div>
+  <div class="box">비/눈이면 [ 15 ]분 일찍</div>
+  <div class="box">알람음 고르기 · 진동 (토글)</div>
+  <div class="btn">저장 → S1</div>
+  <div class="btn">삭제 (편집일 때만) → S1</div>
+  <div class="note">잘못된 입력: 시간 미선택·요일 0개면 저장 막고 안내</div>
+</div>
+
+<h2>S3. 알람 울림 — 목적: 울릴 때 확실히 깨우기</h2>
+<div class="screen">
+  <div class="box" style="font-size:22px">06 : 45</div>
+  <div class="box">출근 알람</div>
+  <div class="box">오늘 비 예보로 15분 일찍! (조정된 알람일 때)</div>
+  <div class="box">(큰 소리 + 진동 재생 중)</div>
+  <div class="btn">→→→ 밀어서 끄기 →→→ (끝까지 밀어야 종료)</div>
+  <div class="note">스누즈 없음 · 끄면 다시 안 울림</div>
+</div>
+</body></html>
