@@ -8,15 +8,33 @@ type Props = {
   onAdd: () => void; // + 버튼 → 추가 화면
   onEdit: (alarm: Alarm) => void; // 카드 탭 → 편집 화면
   onToggle: (id: string) => void; // 켜기/끄기 스위치
+  permissionWarning: boolean; // 알림 권한 거부 상태(경고 배너 표시)
+  onOpenSettings: () => void; // 배너 탭 → 폰 설정 열기
 };
 
-export default function AlarmListScreen({ alarms, onAdd, onEdit, onToggle }: Props) {
+export default function AlarmListScreen({
+  alarms,
+  onAdd,
+  onEdit,
+  onToggle,
+  permissionWarning,
+  onOpenSettings,
+}: Props) {
   return (
     <View style={styles.container}>
       {/* 상단 바 (도시·오늘 날씨 줄은 블럭 3에서 얹는다) */}
       <View style={styles.header}>
         <Text style={styles.title}>내 알람</Text>
       </View>
+
+      {/* 예외(S1): 알림 권한이 꺼져 있으면 알람이 안 울린다 — 경고하고 설정으로 안내 */}
+      {permissionWarning && (
+        <Pressable style={styles.warnBanner} onPress={onOpenSettings}>
+          <Text style={styles.warnText}>
+            지금은 알람이 안 울려요 — 알림 권한이 꺼져 있어요. 눌러서 설정 열기
+          </Text>
+        </Pressable>
+      )}
 
       {alarms.length === 0 ? (
         // 빈 상태: 알람이 하나도 없을 때
@@ -73,6 +91,12 @@ const styles = StyleSheet.create({
     borderBottomColor: "#1e232b",
   },
   title: { color: "#fff", fontSize: 24, fontWeight: "800" },
+  warnBanner: {
+    backgroundColor: "#3a1216",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  warnText: { color: "#f87171", fontSize: 13, fontWeight: "700" },
   empty: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8 },
   emptyTitle: { color: "#e6e6e6", fontSize: 18, fontWeight: "700" },
   emptyHint: { color: "#8a8f98", fontSize: 14, marginBottom: 16 },
