@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "alarm-web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@vibe-kit/mobile", "exec", "expo", "start", "--web", "--port", "8081"],
+      "port": 8081
+    }
+  ]
+}

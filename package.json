@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "turbo run dev --filter=@vibe-kit/web",
     "dev:mobile": "pnpm --filter @vibe-kit/mobile dev",
+    "dev:alarm-web": "pnpm --filter @vibe-kit/mobile exec expo start --web",
     "build": "turbo run build",
     "e2e": "playwright test --config e2e/playwright.config.ts",
     "setup": "node scripts/setup.mjs",

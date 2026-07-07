@@ -10,6 +10,7 @@ import {
   Switch,
   ScrollView,
   Alert,
+  Platform,
   StyleSheet,
 } from "react-native";
 import { Alarm, WEEKDAY_LABELS, formatTime } from "./types";
@@ -40,8 +41,11 @@ export default function AddAlarmScreen({ onSave, onCancel }: Props) {
 
   const handleSave = () => {
     // 예외(잘못된 입력): 요일을 하나도 안 고르면 저장 막고 안내
+    // (웹 미리보기: 폰 팝업(Alert)이 브라우저에선 안 떠서 기본 알림창으로 대신)
     if (days.length === 0) {
-      Alert.alert("요일을 골라주세요", "알람이 울릴 요일을 하나 이상 선택해야 해요.");
+      const msg = "알람이 울릴 요일을 하나 이상 선택해야 해요.";
+      if (Platform.OS === "web") window.alert(msg);
+      else Alert.alert("요일을 골라주세요", msg);
       return;
     }
     onSave({
