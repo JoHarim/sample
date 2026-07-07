@@ -2,6 +2,11 @@
 > 방향을 정하거나 바꾼 결정을 위에서부터 쌓는다(최신이 위). 한 결정 = 4줄.
 > 왜 남기나: 2주 뒤의 나(와 새 AI 세션)가 "왜 이렇게 만들었지?"를 다시 고민하지 않게.
 
+## [2026-07-05] 화면 전환은 네비게이션 라이브러리 없이 상태(state) 기반으로
+- 왜: 화면이 목록<->추가 정도로 적고, S3(울림)은 알림에서 열리고 S0(온보딩)은 첫 실행 조건부 렌더라 스택 네비게이션이 불필요. 부품 최소화·번들 안정.
+- 버린 대안: react-navigation / expo-router — 표준이지만 네이티브 모듈·설정이 늘고 이 규모엔 과함.
+- 영향: App.tsx의 screen 상태로 분기. 안드로이드 상단 여백은 별도 라이브러리 대신 StatusBar.currentHeight로 처리. 화면이 크게 늘면 그때 재검토.
+
 ## [2026-07-05] pnpm을 hoisted(평평하게) 설치로 전환 — 루트 .npmrc node-linker=hoisted
 - 왜: React Native/Expo 번들러(Metro)가 pnpm 기본(격리·symlink) 배치에서 @babel/runtime 등 부품을 못 찾아 번들이 실패했다.
 - 버린 대안: @babel/runtime을 apps/mobile deps로만 추가 — symlink는 걸렸지만 Metro가 못 따라가 여전히 실패. per-package로는 해결 안 됨.
