@@ -1,10 +1,23 @@
 // 스마트 알람 - 블럭 1: 화면 전환의 중심.
 // 이 파일이 하는 일: 지금 어떤 화면(목록 / 추가)을 보여줄지 정하고,
 //   알람 목록 데이터를 들고 있으면서 두 화면에 나눠준다.
-//   (아직 폰에 영구 저장은 안 함 = 다음 스텝 1-3. 지금은 앱이 켜져 있는 동안만 기억한다.)
-import { useState } from "react";
-import { SafeAreaView, StatusBar, Platform, StyleSheet } from "react-native";
+//   스텝 1-3: 알람을 폰에 저장 — 켤 때 읽어오고, "사용자가 바꾼 순간에만" 저장한다.
+//   (바뀔 때마다 자동 저장하지 않는 이유: 켜자마자 읽기 실패분이 도로 저장돼
+//    멀쩡한 알람을 지우는 사고를 원천 차단 — 저장은 항상 사용자 행동의 결과여야 한다.)
+import { useEffect, useRef, useState } from "react";
+import {
+  SafeAreaView,
+  StatusBar,
+  Platform,
+  ActivityIndicator,
+  Alert,
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+} from "react-native";
 import { Alarm } from "./src/types";
+import { loadAlarms, saveAlarms } from "./src/storage";
 import AlarmListScreen from "./src/AlarmListScreen";
 import AddAlarmScreen from "./src/AddAlarmScreen";
 
@@ -13,17 +26,59 @@ type Screen = "list" | "add";
 export default function App() {
   const [screen, setScreen] = useState<Screen>("list");
   const [alarms, setAlarms] = useState<Alarm[]>([]);
+  // 읽기 상태: loading(읽는 중) / ready(성공) / error(읽기 실패 — 저장 금지 유지)
+  const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
+  // 화면에 반영된 최신 목록. 저장 실패 알림이 "이미 낡은 실패"인지 판별하는 기준.
+  const latestRef = useRef<Alarm[]>([]);
+
+  // 앱 시작: 폰에 저장된 알람을 읽어온다. 실패하면 ready로 두지 않는다 —
+  // 그래야 "못 읽은 빈 목록"이 저장으로 이어지는 길이 아예 없다.
+  const load = () => {
+    setLoadState("loading");
+    loadAlarms()
+      .then((stored) => {
+        setAlarms(stored);
+        latestRef.current = stored;
+        setLoadState("ready");
+      })
+      .catch(() => setLoadState("error"));
+  };
+  useEffect(load, []);
+
+  // 사용자가 바꾼 목록(next)을 화면에 반영하고 폰에 저장한다.
+  // 저장 실패 시: 다시 시도 / 되돌리기(prev로 원상복구 — S1 예외 명세) 중 고르게 한다.
+  const applyChange = (next: Alarm[], prev: Alarm[]) => {
+    setAlarms(next);
+    latestRef.current = next;
+    saveAlarms(next).catch(() => {
+      // 이 실패가 이미 낡은 것이면(그 사이 사용자가 또 바꿈) 조용히 무시 —
+      // 최신 변경의 저장이 자기 성공/실패를 따로 처리하므로, 여기서 되살리면 오히려 최신 변경을 덮어쓴다.
+      if (latestRef.current !== next) return;
+      Alert.alert("저장하지 못했어요", "알람 변경이 폰에 저장되지 않았어요.", [
+        { text: "다시 시도", onPress: () => applyChange(next, prev) },
+        {
+          text: "되돌리기",
+          style: "cancel",
+          onPress: () => {
+            setAlarms(prev);
+            latestRef.current = prev;
+          },
+        },
+      ]);
+    });
+  };
 
   // 추가 화면에서 저장 → 목록에 새 알람을 더하고 목록으로 돌아온다
   const handleSave = (alarm: Alarm) => {
-    setAlarms((prev) => [...prev, alarm]);
+    applyChange([...alarms, alarm], alarms);
     setScreen("list");
   };
 
   // 목록의 스위치로 알람 켜기/끄기
   const handleToggle = (id: string) => {
-    setAlarms((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, enabled: !a.enabled } : a))
+    applyChange(
+      alarms.map((a) => (a.id === id ? { ...a, enabled: !a.enabled } : a)),
+      alarms
     );
   };
 
@@ -36,7 +91,21 @@ export default function App() {
         Platform.OS === "android" ? { paddingTop: StatusBar.currentHeight ?? 0 } : null,
       ]}
     >
-      {screen === "list" ? (
+      {loadState === "loading" ? (
+        // 읽어오는 중 (로컬이라 순간이지만, 빈 화면이 번쩍이는 것을 막는다)
+        <View style={styles.center}>
+          <ActivityIndicator color="#3b82f6" />
+        </View>
+      ) : loadState === "error" ? (
+        // 읽기 실패: 알람을 못 불러온 상태로 진행하면 저장 사고로 이어지므로 여기서 멈추고 재시도
+        <View style={styles.center}>
+          <Text style={styles.errorTitle}>알람을 불러오지 못했어요</Text>
+          <Text style={styles.errorHint}>저장된 알람을 읽는 데 실패했어요</Text>
+          <Pressable style={styles.retryButton} onPress={load}>
+            <Text style={styles.retryButtonText}>다시 시도</Text>
+          </Pressable>
+        </View>
+      ) : screen === "list" ? (
         <AlarmListScreen
           alarms={alarms}
           onAdd={() => setScreen("add")}
@@ -51,4 +120,14 @@ export default function App() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#0f1115" },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8 },
+  errorTitle: { color: "#e6e6e6", fontSize: 18, fontWeight: "700" },
+  errorHint: { color: "#8a8f98", fontSize: 14, marginBottom: 16 },
+  retryButton: {
+    backgroundColor: "#3b82f6",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  retryButtonText: { color: "#fff", fontSize: 15, fontWeight: "700" },
 });

@@ -28,7 +28,10 @@ export default function AlarmListScreen({ alarms, onAdd, onToggle }: Props) {
         </View>
       ) : (
         <FlatList
-          data={alarms}
+          // 명세(S1): 목록은 시간순. 원본을 건드리지 않게 복사본을 정렬해 넘긴다.
+          data={[...alarms].sort(
+            (a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute)
+          )}
           keyExtractor={(a) => a.id}
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => (
