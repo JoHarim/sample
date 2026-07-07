@@ -21,11 +21,13 @@ import { loadAlarms, saveAlarms } from "./src/storage";
 import AlarmListScreen from "./src/AlarmListScreen";
 import AddAlarmScreen from "./src/AddAlarmScreen";
 
-type Screen = "list" | "add";
+type Screen = "list" | "form";
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>("list");
   const [alarms, setAlarms] = useState<Alarm[]>([]);
+  // 편집 대상 알람. null이면 "새 알람 추가" 모드.
+  const [editing, setEditing] = useState<Alarm | null>(null);
   // 읽기 상태: loading(읽는 중) / ready(성공) / error(읽기 실패 — 저장 금지 유지)
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
   // 화면에 반영된 최신 목록. 저장 실패 알림이 "이미 낡은 실패"인지 판별하는 기준.
@@ -68,9 +70,21 @@ export default function App() {
     });
   };
 
-  // 추가 화면에서 저장 → 목록에 새 알람을 더하고 목록으로 돌아온다
+  // 폼에서 저장 → 편집이면 그 알람을 교체, 추가면 목록에 더하고 목록으로 돌아온다
   const handleSave = (alarm: Alarm) => {
-    applyChange([...alarms, alarm], alarms);
+    const next = editing
+      ? alarms.map((a) => (a.id === alarm.id ? alarm : a))
+      : [...alarms, alarm];
+    applyChange(next, alarms);
+    setScreen("list");
+  };
+
+  // 편집 화면의 삭제 버튼 → 진짜 삭제하고 목록으로
+  const handleDelete = (id: string) => {
+    applyChange(
+      alarms.filter((a) => a.id !== id),
+      alarms
+    );
     setScreen("list");
   };
 
@@ -108,11 +122,25 @@ export default function App() {
       ) : screen === "list" ? (
         <AlarmListScreen
           alarms={alarms}
-          onAdd={() => setScreen("add")}
+          onAdd={() => {
+            setEditing(null);
+            setScreen("form");
+          }}
+          onEdit={(alarm) => {
+            setEditing(alarm);
+            setScreen("form");
+          }}
           onToggle={handleToggle}
         />
       ) : (
-        <AddAlarmScreen onSave={handleSave} onCancel={() => setScreen("list")} />
+        <AddAlarmScreen
+          // key: 편집 대상이 바뀔 때 폼을 새로 그려 이전 입력이 남지 않게 한다
+          key={editing ? editing.id : "new"}
+          initial={editing ?? undefined}
+          onSave={handleSave}
+          onCancel={() => setScreen("list")}
+          onDelete={handleDelete}
+        />
       )}
     </SafeAreaView>
   );

@@ -1,5 +1,6 @@
-// S2. 알람 추가 — 시간·요일·라벨·날씨조정을 정해 알람 하나를 만든다.
-// 저장을 누르면 부모(App)에게 새 알람을 넘긴다. (폰에 영구 저장은 다음 스텝 1-3)
+// S2. 알람 추가·편집 — 시간·요일·라벨·날씨조정을 정해 알람을 만들거나 고친다.
+// initial이 있으면 편집 모드: 기존 값이 채워져 열리고, 삭제 버튼이 생긴다.
+// 저장을 누르면 부모(App)에게 알람을 넘긴다. (저장·삭제의 실제 반영은 App 담당)
 // 명세: docs/plan/screens/S2-추가편집.md
 import { useState } from "react";
 import {
@@ -13,21 +14,26 @@ import {
   Platform,
   StyleSheet,
 } from "react-native";
-import { Alarm, WEEKDAY_LABELS, formatTime } from "./types";
+import { Alarm, WEEKDAY_LABELS, formatTime12 } from "./types";
 
 type Props = {
+  initial?: Alarm; // 있으면 편집 모드
   onSave: (alarm: Alarm) => void;
   onCancel: () => void;
+  onDelete?: (id: string) => void; // 편집 모드에서만 사용
 };
 
-export default function AddAlarmScreen({ onSave, onCancel }: Props) {
-  const [hour, setHour] = useState(7);
-  const [minute, setMinute] = useState(0);
-  const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5]); // 기본: 주중
-  const [label, setLabel] = useState("");
-  const [weatherAdjust, setWeatherAdjust] = useState(false);
-  const [adjustMinutes, setAdjustMinutes] = useState(15);
-  const [vibrate, setVibrate] = useState(true);
+export default function AddAlarmScreen({ initial, onSave, onCancel, onDelete }: Props) {
+  const isEdit = initial !== undefined;
+  const [hour, setHour] = useState(initial ? initial.hour : 7);
+  const [minute, setMinute] = useState(initial ? initial.minute : 0);
+  const [days, setDays] = useState<number[]>(
+    initial ? initial.repeatDays : [1, 2, 3, 4, 5] // 기본: 주중
+  );
+  const [label, setLabel] = useState(initial?.label ?? "");
+  const [weatherAdjust, setWeatherAdjust] = useState(initial ? initial.weatherAdjust : false);
+  const [adjustMinutes, setAdjustMinutes] = useState(initial ? initial.adjustMinutes : 15);
+  const [vibrate, setVibrate] = useState(initial ? initial.vibrate : true);
 
   // 시/분은 끝에서 넘어가면 반대쪽으로 돈다 (23→0, 0→23 / 59→0, 0→59)
   const stepHour = (delta: number) => setHour((h) => (h + delta + 24) % 24);
@@ -49,16 +55,30 @@ export default function AddAlarmScreen({ onSave, onCancel }: Props) {
       return;
     }
     onSave({
-      id: String(Date.now()),
+      id: initial ? initial.id : String(Date.now()),
       label: label.trim() ? label.trim() : undefined,
       hour,
       minute,
       repeatDays: [...days].sort((a, b) => a - b),
-      enabled: true,
+      enabled: initial ? initial.enabled : true,
       weatherAdjust,
       adjustMinutes,
       vibrate,
     });
+  };
+
+  // 삭제: 진짜 삭제라 되돌릴 수 없으니 한 번 확인하고 지운다
+  const handleDelete = () => {
+    if (!initial || !onDelete) return;
+    const msg = "이 알람을 삭제할까요? 되돌릴 수 없어요.";
+    if (Platform.OS === "web") {
+      if (window.confirm(msg)) onDelete(initial.id);
+    } else {
+      Alert.alert("알람 삭제", msg, [
+        { text: "취소", style: "cancel" },
+        { text: "삭제", style: "destructive", onPress: () => onDelete(initial.id) },
+      ]);
+    }
   };
 
   return (
@@ -68,14 +88,15 @@ export default function AddAlarmScreen({ onSave, onCancel }: Props) {
         <Pressable onPress={onCancel} hitSlop={10}>
           <Text style={styles.headerBtn}>취소</Text>
         </Pressable>
-        <Text style={styles.title}>알람 추가</Text>
+        <Text style={styles.title}>{isEdit ? "알람 편집" : "알람 추가"}</Text>
         <Pressable onPress={handleSave} hitSlop={10}>
           <Text style={[styles.headerBtn, styles.saveBtn]}>저장</Text>
         </Pressable>
       </View>
 
       <ScrollView contentContainerStyle={styles.body}>
-        {/* 시간 */}
+        {/* 시간 (오전/오후가 시각을 따라 자동으로 바뀐다) */}
+        <Text style={styles.period}>{hour < 12 ? "오전" : "오후"}</Text>
         <View style={styles.timeRow}>
           <TimeColumn value={hour} onUp={() => stepHour(1)} onDown={() => stepHour(-1)} />
           <Text style={styles.colon}>:</Text>
@@ -144,9 +165,16 @@ export default function AddAlarmScreen({ onSave, onCancel }: Props) {
 
         {/* 미리보기 */}
         <Text style={styles.preview}>
-          {formatTime(hour, minute)} ·{" "}
+          {formatTime12(hour, minute)} ·{" "}
           {days.length === 0 ? "요일을 골라주세요" : `${days.length}일 반복`}
         </Text>
+
+        {/* 삭제 (편집 모드에서만) */}
+        {isEdit && onDelete && (
+          <Pressable style={styles.deleteBtn} onPress={handleDelete}>
+            <Text style={styles.deleteBtnText}>알람 삭제</Text>
+          </Pressable>
+        )}
       </ScrollView>
     </View>
   );
@@ -190,6 +218,13 @@ const styles = StyleSheet.create({
   headerBtn: { color: "#8a8f98", fontSize: 16 },
   saveBtn: { color: "#3b82f6", fontWeight: "800" },
   body: { padding: 20, gap: 24 },
+  period: {
+    color: "#3b82f6",
+    fontSize: 18,
+    fontWeight: "800",
+    textAlign: "center",
+    marginBottom: -12,
+  },
   timeRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -243,4 +278,12 @@ const styles = StyleSheet.create({
   stepBtnText: { color: "#3b82f6", fontSize: 20, fontWeight: "800" },
   adjustValue: { color: "#fff", fontSize: 16, fontWeight: "700", minWidth: 48, textAlign: "center" },
   preview: { color: "#5b616b", fontSize: 13, textAlign: "center", marginTop: 8 },
+  deleteBtn: {
+    backgroundColor: "#2a1518",
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  deleteBtnText: { color: "#ef4444", fontSize: 15, fontWeight: "700" },
 });

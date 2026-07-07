@@ -1,15 +1,16 @@
-// S1. 알람 목록(홈) — 내 알람을 보고, 켜고 끄고, + 로 추가 화면으로 간다.
+// S1. 알람 목록(홈) — 내 알람을 보고, 켜고 끄고, 카드를 탭해 고치고, + 로 추가한다.
 // 명세: docs/plan/screens/S1-목록.md
 import { View, Text, FlatList, Pressable, Switch, StyleSheet } from "react-native";
-import { Alarm, formatTime, formatRepeat } from "./types";
+import { Alarm, formatTime12, formatRepeat } from "./types";
 
 type Props = {
   alarms: Alarm[];
   onAdd: () => void; // + 버튼 → 추가 화면
+  onEdit: (alarm: Alarm) => void; // 카드 탭 → 편집 화면
   onToggle: (id: string) => void; // 켜기/끄기 스위치
 };
 
-export default function AlarmListScreen({ alarms, onAdd, onToggle }: Props) {
+export default function AlarmListScreen({ alarms, onAdd, onEdit, onToggle }: Props) {
   return (
     <View style={styles.container}>
       {/* 상단 바 (도시·오늘 날씨 줄은 블럭 3에서 얹는다) */}
@@ -36,16 +37,19 @@ export default function AlarmListScreen({ alarms, onAdd, onToggle }: Props) {
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => (
             <View style={styles.card}>
-              <View style={styles.cardMain}>
+              {/* 카드 본문을 탭하면 편집으로 (스위치는 따로 눌리게 분리) */}
+              <Pressable style={styles.cardMain} onPress={() => onEdit(item)}>
                 <Text style={[styles.cardTime, !item.enabled && styles.dim]}>
-                  {formatTime(item.hour, item.minute)}
+                  {formatTime12(item.hour, item.minute)}
                 </Text>
                 <Text style={[styles.cardSub, !item.enabled && styles.dim]}>
                   {item.label ? `${item.label} · ` : ""}
                   {formatRepeat(item.repeatDays)}
+                  {" · "}
+                  {item.vibrate ? "소리·진동" : "소리만"}
                   {item.weatherAdjust ? `  ·  🌦 ${item.adjustMinutes}분 일찍` : ""}
                 </Text>
-              </View>
+              </Pressable>
               <Switch value={item.enabled} onValueChange={() => onToggle(item.id)} />
             </View>
           )}
@@ -89,7 +93,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#171b22",
   },
   cardMain: { flex: 1 },
-  cardTime: { color: "#fff", fontSize: 30, fontWeight: "800" },
+  cardTime: { color: "#fff", fontSize: 26, fontWeight: "800" },
   cardSub: { color: "#8a8f98", fontSize: 13, marginTop: 4 },
   dim: { opacity: 0.4 },
   fab: {

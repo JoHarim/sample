@@ -19,6 +19,13 @@ export function formatTime(hour: number, minute: number): string {
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
+// 시각을 "오전 7:00" / "오후 11:30"처럼 12시간제로 보여준다 (아침/저녁 구분용).
+export function formatTime12(hour: number, minute: number): string {
+  const period = hour < 12 ? "오전" : "오후";
+  const h12 = hour % 12 === 0 ? 12 : hour % 12;
+  return `${period} ${h12}:${String(minute).padStart(2, "0")}`;
+}
+
 // 반복 요일을 사람 말로: 매일 / 주중 / 주말 / 월·수·금 ...
 export function formatRepeat(days: number[]): string {
   if (days.length === 0) return "한 번만";
