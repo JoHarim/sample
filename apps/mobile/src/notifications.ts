@@ -13,7 +13,9 @@ if (!isWeb) {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowAlert: true,
-      shouldPlaySound: true,
+      // 앱이 켜진 상태로 울릴 땐 시스템 소리를 끈다 — 울림 화면(RingScreen)이 소리를 담당하므로
+      // 시스템 "딩"과 알람음이 겹치는 것을 막는다. (앱이 꺼져 있을 땐 채널 소리가 대신 울림)
+      shouldPlaySound: false,
       shouldSetBadge: false,
     }),
   });
@@ -91,6 +93,7 @@ async function doRescheduleAll(alarms: Alarm[]): Promise<void> {
           body: `${formatTime12(alarm.hour, alarm.minute)} 알람이에요`,
           sound: true,
           priority: Notifications.AndroidNotificationPriority.MAX,
+          data: { alarmId: alarm.id }, // 울림 화면이 "어느 알람인지" 찾는 꼬리표
         },
         trigger: {
           channelId: alarm.vibrate ? "alarm" : "alarm-quiet",
@@ -102,4 +105,29 @@ async function doRescheduleAll(alarms: Alarm[]): Promise<void> {
       });
     }
   }
+}
+
+// 알림이 울리거나(앱이 켜져 있을 때) 사용자가 알림을 누르면(백그라운드에서) 콜백을 부른다.
+// 콜백에 알람 id를 넘겨 App이 그 알람의 울림 화면을 띄운다. 반환값은 리스너 해제 함수.
+export function addRingListeners(onRing: (alarmId: string | null) => void): () => void {
+  if (isWeb) return () => {};
+  const received = Notifications.addNotificationReceivedListener((n) => {
+    const id = n.request.content.data?.alarmId;
+    onRing(typeof id === "string" ? id : null);
+  });
+  const responded = Notifications.addNotificationResponseReceivedListener((r) => {
+    const id = r.notification.request.content.data?.alarmId;
+    onRing(typeof id === "string" ? id : null);
+  });
+  return () => {
+    received.remove();
+    responded.remove();
+  };
+}
+
+// 알림함(트레이)에 이미 뜬 알림을 지운다.
+// 울림 화면을 띄우거나 끌 때 호출 — 남은 알림을 눌러 끈 알람이 다시 울리는 것을 막는다.
+export function clearDeliveredNotifications(): void {
+  if (isWeb) return;
+  Notifications.dismissAllNotificationsAsync().catch(() => {});
 }

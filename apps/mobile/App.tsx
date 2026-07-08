@@ -25,9 +25,12 @@ import {
   ensurePermission,
   checkPermission,
   rescheduleAll,
+  addRingListeners,
+  clearDeliveredNotifications,
 } from "./src/notifications";
 import AlarmListScreen from "./src/AlarmListScreen";
 import AddAlarmScreen from "./src/AddAlarmScreen";
+import RingScreen from "./src/RingScreen";
 
 type Screen = "list" | "form";
 
@@ -44,6 +47,8 @@ export default function App() {
   const readyRef = useRef(false);
   // 알림 권한이 거부돼 알람이 못 울리는 상태인지 (목록 상단 경고 배너용)
   const [permissionWarning, setPermissionWarning] = useState(false);
+  // 지금 울리고 있는 알람. null이 아니면 울림 화면(S3)이 모든 화면 위에 뜬다.
+  const [ringingAlarm, setRingingAlarm] = useState<Alarm | null>(null);
 
   // 앱 시작: 폰에 저장된 알람을 읽어온다. 실패하면 ready로 두지 않는다 —
   // 그래야 "못 읽은 빈 목록"이 저장으로 이어지는 길이 아예 없다.
@@ -73,6 +78,20 @@ export default function App() {
       });
     });
     return () => sub.remove();
+  }, []);
+
+  // 알림이 울리거나(앱 켜져 있을 때) 사용자가 알림을 누르면 → 그 알람의 울림 화면을 띄운다.
+  useEffect(() => {
+    const unsub = addRingListeners((alarmId) => {
+      if (alarmId === null) return;
+      const a = latestRef.current.find((x) => x.id === alarmId);
+      if (a) {
+        setRingingAlarm(a);
+        // 트레이에 남은 알림을 지워, 끈 뒤 그 알림을 눌러 다시 울리는 것을 막는다.
+        clearDeliveredNotifications();
+      }
+    });
+    return unsub;
   }, []);
 
   // 알림 준비: 채널 만들기 → 권한 확인(필요하면 요청) → 예약 장부 복구.
@@ -138,6 +157,19 @@ export default function App() {
       alarms
     );
   };
+
+  // 알람이 울리는 중이면 다른 모든 화면 위에 울림 화면을 띄운다.
+  if (ringingAlarm) {
+    return (
+      <RingScreen
+        alarm={ringingAlarm}
+        onDismiss={() => {
+          clearDeliveredNotifications(); // 끌 때도 한 번 더 트레이 정리(안전)
+          setRingingAlarm(null);
+        }}
+      />
+    );
+  }
 
   return (
     // 아이폰: SafeAreaView가 노치/홈바 여백 처리. 안드로이드: SafeAreaView가 무시되므로
