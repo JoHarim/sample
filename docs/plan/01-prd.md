@@ -45,7 +45,7 @@
 
 | 기능 | 플랫폼 | 발급처 | .env 키 |
 |---|---|---|---|
-| 날씨 예보 | OpenWeatherMap | openweathermap.org | OPENWEATHER_API_KEY |
+| 날씨 예보 | OpenWeatherMap | openweathermap.org | EXPO_PUBLIC_OPENWEATHER_API_KEY (위치: apps/mobile/.env) |
 | 알람 알림 | Expo Notifications (폰 내장) | — | (없음) |
 | 저장 | 폰 로컬 (Expo SQLite/AsyncStorage) | — | (없음) |
 

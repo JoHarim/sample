@@ -24,7 +24,7 @@ flowchart LR
 ## 빌려오는 것 (문 목록)
 | 문(서비스) | 무엇을 대신해주나 | 어느 기능에 필요한가 | .env 키 | 과금 |
 |---|---|---|---|---|
-| OpenWeatherMap | 도시 날씨 예보 | 날씨 조정 | OPENWEATHER_API_KEY | 무료 티어 |
+| OpenWeatherMap | 도시 날씨 예보 | 날씨 조정 | EXPO_PUBLIC_OPENWEATHER_API_KEY (apps/mobile/.env) | 무료 티어 |
 | Expo Notifications | 정해진 시각 알림(폰 내장) | 알람 울리기 | (없음) | 무료 |
 
 ## 이번 스코프에서 안 여는 문

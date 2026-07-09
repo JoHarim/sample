@@ -29,3 +29,39 @@ export async function loadAlarms(): Promise<Alarm[]> {
 export async function saveAlarms(alarms: Alarm[]): Promise<void> {
   await AsyncStorage.setItem(ALARMS_KEY, JSON.stringify(alarms));
 }
+
+// 앱 설정(블럭 3): 날씨 조회용 도시. 이름과 좌표(위도·경도)를 함께 저장한다.
+// 설계: docs/plan/05-db.md 의 settings 표 (1줄)
+export type Settings = {
+  city: string; // 예: "서울"
+  lat: number;
+  lon: number;
+};
+
+const SETTINGS_KEY = "settings:v1";
+
+// 설정 읽기. 없거나 깨졌으면 null(도시 미설정) — 알람 목록과 달리
+// 설정은 잃어도 다시 고르면 그만이라, 읽기 실패도 null로 둥글게 처리한다.
+export async function loadSettings(): Promise<Settings | null> {
+  try {
+    const raw = await AsyncStorage.getItem(SETTINGS_KEY);
+    if (raw === null) return null;
+    const parsed = JSON.parse(raw);
+    if (
+      parsed !== null &&
+      typeof parsed === "object" &&
+      typeof parsed.city === "string" &&
+      typeof parsed.lat === "number" &&
+      typeof parsed.lon === "number"
+    ) {
+      return parsed as Settings;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveSettings(settings: Settings): Promise<void> {
+  await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}

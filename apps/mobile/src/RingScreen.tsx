@@ -16,13 +16,14 @@ import { Alarm, formatTime12 } from "./types";
 
 type Props = {
   alarm: Alarm;
+  adjusted?: boolean; // 이번 회차가 비/눈 예보로 일찍 당겨져 울렸나
   onDismiss: () => void;
 };
 
 const THUMB = 64; // 미는 손잡이 크기
 const PAD = 6; // 트랙 안쪽 여백
 
-export default function RingScreen({ alarm, onDismiss }: Props) {
+export default function RingScreen({ alarm, adjusted, onDismiss }: Props) {
   // 소리(반복) + 진동: 화면이 떠 있는 동안만. 나갈 때 반드시 멈춘다.
   useEffect(() => {
     let sound: Audio.Sound | null = null;
@@ -122,10 +123,21 @@ export default function RingScreen({ alarm, onDismiss }: Props) {
         </Pressable>
       ) : null}
 
+      {/* 큰 시계: 일찍 당겨진 회차면 "실제 울린 시각"(설정 시각 - N분)을 보여준다 (S3 명세: 현재 시각) */}
       <View style={styles.top}>
-        <Text style={styles.time}>{formatTime12(alarm.hour, alarm.minute)}</Text>
+        <Text style={styles.time}>
+          {(() => {
+            const total = alarm.hour * 60 + alarm.minute - (adjusted === true ? alarm.adjustMinutes : 0);
+            const norm = ((total % 1440) + 1440) % 1440;
+            return formatTime12(Math.floor(norm / 60), norm % 60);
+          })()}
+        </Text>
         {alarm.label ? <Text style={styles.label}>{alarm.label}</Text> : null}
-        {alarm.weatherAdjust ? (
+        {adjusted === true ? (
+          <Text style={styles.weatherAdjusted}>
+            🌧 오늘 비/눈 예보로 {alarm.adjustMinutes}분 일찍 울렸어요
+          </Text>
+        ) : alarm.weatherAdjust ? (
           <Text style={styles.weather}>🌦 날씨 조정 알람</Text>
         ) : null}
       </View>
@@ -185,6 +197,7 @@ const styles = StyleSheet.create({
   time: { color: "#fff", fontSize: 72, fontWeight: "900" },
   label: { color: "#cbd5e1", fontSize: 20 },
   weather: { color: "#8a8f98", fontSize: 14 },
+  weatherAdjusted: { color: "#7dd3fc", fontSize: 15, fontWeight: "700" },
   track: {
     width: "82%",
     height: THUMB + PAD * 2,
