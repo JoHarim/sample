@@ -6,6 +6,7 @@ import {
   Text,
   Animated,
   PanResponder,
+  Pressable,
   Vibration,
   Platform,
   StyleSheet,
@@ -113,6 +114,14 @@ export default function RingScreen({ alarm, onDismiss }: Props) {
         Platform.OS === "web" ? ({ userSelect: "none" } as object) : null,
       ]}
     >
+      {/* 개발 모드 전용 비상 닫기 — 웹 미리보기에서 드래그가 안 되거나 슬라이더가 안 보여도
+          끌 수 있게 오른쪽 위에 항상 표시. 배포판(__DEV__=false)에선 자동 제외 = 폰 제품은 밀어야만 꺼짐 */}
+      {__DEV__ ? (
+        <Pressable style={styles.devClose} onPress={() => onDismissRef.current()} hitSlop={12}>
+          <Text style={styles.devCloseText}>✕ 닫기(개발용)</Text>
+        </Pressable>
+      ) : null}
+
       <View style={styles.top}>
         <Text style={styles.time}>{formatTime12(alarm.hour, alarm.minute)}</Text>
         {alarm.label ? <Text style={styles.label}>{alarm.label}</Text> : null}
@@ -157,9 +166,22 @@ const styles = StyleSheet.create({
     backgroundColor: "#0b0d12",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 80,
+    // 여백을 줄이고(80→32) 시계 영역이 줄어들 수 있게(minHeight 0) 해서,
+    // 낮은 브라우저 창에서도 슬라이더가 화면 밖으로 밀려나지 않게 한다
+    paddingVertical: 32,
   },
-  top: { alignItems: "center", flex: 1, justifyContent: "center", gap: 12 },
+  devClose: {
+    position: "absolute",
+    top: 16,
+    right: 20,
+    zIndex: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: "#171b22",
+  },
+  devCloseText: { color: "#8a8f98", fontSize: 13, fontWeight: "700" },
+  top: { alignItems: "center", flex: 1, minHeight: 0, justifyContent: "center", gap: 12 },
   time: { color: "#fff", fontSize: 72, fontWeight: "900" },
   label: { color: "#cbd5e1", fontSize: 20 },
   weather: { color: "#8a8f98", fontSize: 14 },
