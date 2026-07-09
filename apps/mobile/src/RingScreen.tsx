@@ -70,30 +70,49 @@ export default function RingScreen({ alarm, onDismiss }: Props) {
     return () => x.removeListener(id);
   }, [x]);
 
+  // onDismiss를 ref로 들고 있어, 제스처 객체(1회 생성)가 항상 최신 함수를 부르게 한다
+  const onDismissRef = useRef(onDismiss);
+  onDismissRef.current = onDismiss;
+
+  // 드래그가 "끝났을 때"(정상 놓음/강제 중단 모두) 공통 처리:
+  // 90% 이상 밀었으면 끝까지 채우고 끈다, 아니면 처음으로 되돌린다.
+  const finishDrag = () => {
+    const max = maxXRef.current;
+    if (max > 0 && xVal.current >= max * 0.9) {
+      Animated.timing(x, { toValue: max, duration: 100, useNativeDriver: false }).start(() =>
+        onDismissRef.current()
+      );
+    } else {
+      Animated.spring(x, { toValue: 0, useNativeDriver: false }).start();
+    }
+  };
+  const finishDragRef = useRef(finishDrag);
+  finishDragRef.current = finishDrag;
+
   const pan = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
+      // 브라우저(글자 선택)나 다른 컴포넌트가 제스처를 뺏으려 해도 거절한다
+      onPanResponderTerminationRequest: () => false,
       onPanResponderMove: (_e, g) => {
         const nx = Math.max(0, Math.min(maxXRef.current, g.dx));
         x.setValue(nx);
       },
-      onPanResponderRelease: () => {
-        const max = maxXRef.current;
-        // 90% 이상 밀었으면 끝까지 채우고 끈다, 아니면 처음으로 되돌린다
-        if (max > 0 && xVal.current >= max * 0.9) {
-          Animated.timing(x, { toValue: max, duration: 100, useNativeDriver: false }).start(
-            () => onDismiss()
-          );
-        } else {
-          Animated.spring(x, { toValue: 0, useNativeDriver: false }).start();
-        }
-      },
+      onPanResponderRelease: () => finishDragRef.current(),
+      // 그래도 제스처가 강제로 끊기면(웹 선택·시스템 제스처) 멈춘 자리에 방치하지 않고 정리한다
+      onPanResponderTerminate: () => finishDragRef.current(),
     })
   ).current;
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        // 웹 전용: 드래그 중 글자 선택이 시작되면 브라우저가 제스처를 끊는다 — 화면 전체에서 선택 금지
+        Platform.OS === "web" ? ({ userSelect: "none" } as object) : null,
+      ]}
+    >
       <View style={styles.top}>
         <Text style={styles.time}>{formatTime12(alarm.hour, alarm.minute)}</Text>
         {alarm.label ? <Text style={styles.label}>{alarm.label}</Text> : null}
@@ -109,9 +128,19 @@ export default function RingScreen({ alarm, onDismiss }: Props) {
           maxXRef.current = Math.max(0, w - THUMB - PAD * 2);
         }}
       >
-        <Text style={styles.trackHint}>밀어서 끄기 →</Text>
+        {/* pointerEvents="none": 안내 글자가 드래그를 가로채지 않게 (통과용 View로 감쌈) */}
+        <View style={styles.trackHintWrap} pointerEvents="none">
+          <Text style={styles.trackHint}>밀어서 끄기 →</Text>
+        </View>
         <Animated.View
-          style={[styles.thumb, { transform: [{ translateX: x }] }]}
+          style={[
+            styles.thumb,
+            { transform: [{ translateX: x }] },
+            // 웹 전용: 브라우저의 글자 선택·터치 스크롤이 드래그에 끼어들지 않게 차단
+            Platform.OS === "web"
+              ? ({ touchAction: "none", userSelect: "none" } as object)
+              : null,
+          ]}
           {...pan.panHandlers}
         >
           <Text style={styles.thumbText}>›</Text>
@@ -142,9 +171,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: PAD,
   },
-  trackHint: {
+  trackHintWrap: {
     position: "absolute",
-    alignSelf: "center",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+  },
+  trackHint: {
     color: "#5b616b",
     fontSize: 15,
     fontWeight: "700",

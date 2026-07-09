@@ -210,6 +210,25 @@ export default function App() {
           onOpenSettings={() => {
             Linking.openSettings().catch(() => {});
           }}
+          // 개발 모드 전용: 울림 화면을 바로 열어 시험 (첫 알람이 있으면 그걸로, 없으면 견본으로)
+          onDevRing={
+            __DEV__
+              ? () =>
+                  setRingingAlarm(
+                    alarms[0] ?? {
+                      id: "dev-preview",
+                      label: "미리보기 알람",
+                      hour: 7,
+                      minute: 0,
+                      repeatDays: [1, 2, 3, 4, 5],
+                      enabled: true,
+                      weatherAdjust: false,
+                      adjustMinutes: 15,
+                      vibrate: true,
+                    }
+                  )
+              : undefined
+          }
         />
       ) : (
         <AddAlarmScreen

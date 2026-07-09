@@ -10,6 +10,7 @@ type Props = {
   onToggle: (id: string) => void; // 켜기/끄기 스위치
   permissionWarning: boolean; // 알림 권한 거부 상태(경고 배너 표시)
   onOpenSettings: () => void; // 배너 탭 → 폰 설정 열기
+  onDevRing?: () => void; // 개발 모드 전용: 울림 화면 미리보기
 };
 
 export default function AlarmListScreen({
@@ -19,12 +20,19 @@ export default function AlarmListScreen({
   onToggle,
   permissionWarning,
   onOpenSettings,
+  onDevRing,
 }: Props) {
   return (
     <View style={styles.container}>
       {/* 상단 바 (도시·오늘 날씨 줄은 블럭 3에서 얹는다) */}
       <View style={styles.header}>
         <Text style={styles.title}>내 알람</Text>
+        {/* 개발 모드에서만: 울림 화면을 바로 열어 밀어서 끄기를 시험한다 (배포판엔 없음) */}
+        {onDevRing ? (
+          <Pressable onPress={onDevRing} hitSlop={8}>
+            <Text style={styles.devRing}>울림 미리보기</Text>
+          </Pressable>
+        ) : null}
       </View>
 
       {/* 예외(S1): 알림 권한이 꺼져 있으면 알람이 안 울린다 — 경고하고 설정으로 안내 */}
@@ -85,12 +93,16 @@ export default function AlarmListScreen({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#1e232b",
   },
   title: { color: "#fff", fontSize: 24, fontWeight: "800" },
+  devRing: { color: "#5b616b", fontSize: 12, fontWeight: "700" },
   warnBanner: {
     backgroundColor: "#3a1216",
     paddingHorizontal: 16,
