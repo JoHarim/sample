@@ -13,7 +13,9 @@ const isWeb = Platform.OS === "web";
 if (!isWeb) {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
-      shouldShowAlert: true,
+      // SDK 54: shouldShowAlert가 배너+목록으로 분리됨 — 둘 다 켜서 예전 동작 유지
+      shouldShowBanner: true,
+      shouldShowList: true,
       // 앱이 켜진 상태로 울릴 땐 시스템 소리를 끈다 — 울림 화면(RingScreen)이 소리를 담당하므로
       // 시스템 "딩"과 알람음이 겹치는 것을 막는다. (앱이 꺼져 있을 땐 채널 소리가 대신 울림)
       shouldPlaySound: false,
@@ -192,7 +194,11 @@ async function doRescheduleAll(
         // 꼬리표: 어느 알람인지 / 일찍 당겨졌는지 / 이 회차의 원래 시각(두 번 울림 방지용)
         data: { alarmId: alarm.id, adjusted, baseTime: base.getTime() },
       },
-      trigger: { channelId, date: fireAt },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        channelId,
+        date: fireAt,
+      },
     });
   }
   return adjustInfo;
@@ -210,11 +216,11 @@ async function scheduleWeekly(alarm: Alarm, channelId: string): Promise<void> {
         data: { alarmId: alarm.id, adjusted: false },
       },
       trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
         channelId,
         weekday: day + 1,
         hour: alarm.hour,
         minute: alarm.minute,
-        repeats: true,
       },
     });
   }

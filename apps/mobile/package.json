@@ -10,20 +10,20 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.25.0",
-    "@expo/metro-runtime": "~3.2.3",
-    "@react-native-async-storage/async-storage": "1.23.1",
-    "expo": "^51.0.0",
-    "expo-av": "~14.0.7",
-    "expo-notifications": "~0.28.19",
-    "react": "^18.2.0",
-    "react-dom": "18.2.0",
-    "react-native": "^0.74.5",
-    "react-native-web": "~0.19.10"
+    "@expo/metro-runtime": "~6.1.2",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "expo": "~54.0.0",
+    "expo-av": "~16.0.8",
+    "expo-notifications": "~0.32.17",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-web": "~0.21.0"
   },
   "devDependencies": {
     "@expo/ngrok": "^4.1.0",
-    "@types/react": "~18.2.79",
-    "typescript": "~5.3.3"
+    "@types/react": "~19.1.0",
+    "typescript": "~5.9.2"
   },
   "//": "폰 앱을 만들 거면 여기. pnpm install 후 expo start. 안 쓰면 무시해도 됨."
 }
